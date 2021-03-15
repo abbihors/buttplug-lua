@@ -72,10 +72,6 @@ messages.VibrateCmd = {
 --
 --
 
--- TODO: Figure out what to do about opening the websocket
-local url = "ws://127.0.0.1:12345"
-local sock = pollnet.open_ws(url)
-
 -- Send a message to the Buttplug Server
 function send(msg)
     local message_type = next(msg)
@@ -85,7 +81,13 @@ function send(msg)
     
     local payload = "[" .. json.encode(msg) .. "]"
     print(payload)
-    sock:send(payload)
+    buttplug.sock:send(payload)
+end
+
+-- Connect to websocket address, returns open socket
+function buttplug.connect(websocket_address)
+    buttplug.sock = pollnet.open_ws(websocket_address)
+    return buttplug.sock
 end
 
 function buttplug.request_server_info(client_name)

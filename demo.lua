@@ -24,6 +24,8 @@ end
 -- local url = "ws://127.0.0.1:12345"
 -- local sock = pollnet.open_ws(url)
 
+local sock = buttplug.connect("ws://127.0.0.1:12345")
+
 function wait_for_reply(expected_message)
     -- while sock:poll() do
     --     local message = sock:last_message()
