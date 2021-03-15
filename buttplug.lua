@@ -60,6 +60,12 @@ messages.StopScanning = {
     }
 }
 
+messages.StopAllDevices = {
+    StopAllDevices = {
+        Id = 1
+    }
+}
+
 messages.VibrateCmd = {
     VibrateCmd = {
         Id = 1,
@@ -119,6 +125,10 @@ function buttplug.send_vibrate_cmd(dev_index, speeds)
     end
 
     send(msg)
+end
+
+function buttplug.send_stop_all_devices_cmd()
+    send(messages.StopAllDevices)
 end
 
 return buttplug

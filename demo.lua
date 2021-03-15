@@ -1,7 +1,7 @@
-local pollnet = require("pollnet")
-local ffi = require("ffi")
+-- local pollnet = require("pollnet")
 -- local json = require("json")
 local buttplug = require("buttplug")
+local ffi = require("ffi")
 
 local client_name = "Anomaly Demo"
 
@@ -68,6 +68,9 @@ wait_for_reply("Ok")
 
 -- send_vibrate_cmd()
 buttplug.send_vibrate_cmd(0, { 0.2, 0.2 })
+
+sleep(2000)
+buttplug.send_stop_all_devices_cmd()
 
 sleep(2000)
 
