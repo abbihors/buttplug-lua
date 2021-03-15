@@ -1,13 +1,13 @@
--- minimal buttplug client
+-- buttplug.lua -- Lua client for buttplug.io
 local json = require('json')
+local pollnet = require("pollnet")
 
-local client_name = "Lua"
+local buttplug = {}
+
 local msg_counter = 1
 
 --
---
 -- Buttplug messages
---
 --
 
 local messages = {}
@@ -71,9 +71,12 @@ messages.VibrateCmd = {
 --
 --
 --
---
---
 
+-- TODO: Figure out what to do about opening the websocket
+local url = "ws://127.0.0.1:12345"
+local sock = pollnet.open_ws(url)
+
+-- Send a message to the Buttplug Server
 function send(msg)
     local message_type = next(msg)
 
@@ -82,13 +85,29 @@ function send(msg)
     
     local payload = "[" .. json.encode(msg) .. "]"
     print(payload)
-    -- sock:send(payload)
+    sock:send(payload)
+end
+
+function buttplug.request_server_info(client_name)
+    local msg = messages.RequestServerInfo
+
+    msg["RequestServerInfo"]["ClientName"] = client_name
+
+    send(msg)
+end
+
+function buttplug.start_scanning()
+    send(messages.StartScanning)
+end
+
+function buttplug.stop_scanning()
+    send(messages.StopScanning)
 end
 
 -- Sends a vibrate command to device with the index `dev_index`.
 -- `speeds` is a table with 1 vibration value per motor e.g. { 0.2, 0.2
 -- } would set both motors on a device with 2 motors to 0.2
-function send_vibrate_cmd(dev_index, speeds)
+function buttplug.send_vibrate_cmd(dev_index, speeds)
     local msg = messages.VibrateCmd
 
     msg["VibrateCmd"]["DeviceIndex"] = dev_index
@@ -100,23 +119,4 @@ function send_vibrate_cmd(dev_index, speeds)
     send(msg)
 end
 
-send_vibrate_cmd(0, { 0.2, 0.2 })
-
--- sends this message and increments id
--- buttplug.send(RequestServerInfo)
--- send(messages.RequestServerInfo)
--- send(messages.ServerInfo)
-
--- print(json.encode(RequestServerInfo))
-
--- local reply = json.decode('[{"ServerInfo":{"MaxPingTime":100,"MessageVersion":1,"Id":2}}]')
-
--- print(reply[1].ServerInfo)
--- if (reply )
-
--- local m = next(reply[1])
-
--- print(m == "ServerInfo")
--- print(reply[1][m]["Id"])
--- print(reply[1][m].Id)
--- print(reply[1][0])
+return buttplug

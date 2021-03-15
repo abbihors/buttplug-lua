@@ -1,7 +1,9 @@
 local pollnet = require("pollnet")
 local ffi = require("ffi")
-local json = require("json")
+-- local json = require("json")
+local buttplug = require("buttplug")
 
+local client_name = "Anomaly Demo"
 
 -- get system Sleep function
 ffi.cdef[[
@@ -19,123 +21,34 @@ else
   end
 end
 
-
-local url = "ws://127.0.0.1:12345"
-local sock = pollnet.open_ws(url)
-
-local messages = {}
-
--- local status_msg = "[{\"RequestServerInfo\":{\"Id\":1,\"ClientName\":\"STALKER\",\"MessageVersion\":1}}]"
-messages.RequestServerInfo = [[
-[
-  {
-    "RequestServerInfo": {
-      "Id": 1,
-      "ClientName": "Anomaly",
-      "MessageVersion": 1
-    }
-  }
-]
-]]
-
-messages.StartScanning = [[
-[
-  {
-    "StartScanning": {
-      "Id": 1
-    }
-  }
-]
-]]
-
-messages.StopScanning = [[
-[
-  {
-    "StopScanning": {
-      "Id": 1
-    }
-  }
-]
-]]
-
-messages.TestVibrate = [[
-[
-  {
-    "VibrateCmd": {
-      "Id": 1,
-      "DeviceIndex": 0,
-      "Speeds": [
-        {
-          "Index": 0,
-          "Speed": 0.2
-        },
-        {
-          "Index": 1,
-          "Speed": 0.2
-        }
-      ]
-    }
-  }
-]
-]]
-
-messages.VibrateCmd = {
-    VibrateCmd = {
-        Id = 1,
-        DeviceIndex = 0,
-        Speeds = {}
-    }
-}
-
--- print(status_msg)
-local req_devices = "[    {      \"StartScanning\": {        \"Id\": 2      }    }  ]"
-
+-- local url = "ws://127.0.0.1:12345"
+-- local sock = pollnet.open_ws(url)
 
 function wait_for_reply(expected_message)
-    while sock:poll() do
-        local message = sock:last_message()
+    -- while sock:poll() do
+    --     local message = sock:last_message()
 
-        if message then
-            local contents = json.decode(message)
+    --     if message then
+    --         local contents = json.decode(message)
 
-            if next(contents[1]) == expected_message then
-                print(message)
-                break
-            end
-        else
-            sleep(200)
-        end
-    end
-end
-
-function send_vibrate_cmd()
-    local msg = messages.VibrateCmd
-
-    msg["VibrateCmd"]["Speeds"] = {
-        {
-            Index = 0,
-            Speed = 0.2
-        },
-        {
-            Index = 1,
-            Speed = 0.2
-        }
-    }
-
-    local payload = "[" .. json.encode(msg) .. "]"
-
-    print(payload)
-    sock:send(payload)
-
-    wait_for_reply("Ok")
+    --         if next(contents[1]) == expected_message then
+    --             print(message)
+    --             break
+    --         end
+    --     else
+    --         sleep(200)
+    --     end
+    -- end
+    sleep(1000)
 end
 
 -- Register with the server
-sock:send(messages.RequestServerInfo)
+-- sock:send(messages.RequestServerInfo)
+buttplug.request_server_info(client_name)
 wait_for_reply("ServerInfo")
 
 -- Start scanning for devices
-sock:send(messages.StartScanning)
+buttplug.start_scanning()
 wait_for_reply("Ok")
 
 -- TODO: Check for existing devices?
@@ -144,7 +57,7 @@ wait_for_reply("Ok")
 wait_for_reply("DeviceAdded")
 
 -- Stop scanning
-sock:send(messages.StopScanning)
+buttplug.stop_scanning()
 wait_for_reply("Ok")
 
 -- Send test vibration
@@ -152,12 +65,12 @@ wait_for_reply("Ok")
 -- wait_for_reply("Ok")
 
 -- send_vibrate_cmd()
-send_vibrate_cmd({0.2, 0.2})
+buttplug.send_vibrate_cmd(0, { 0.2, 0.2 })
 
 sleep(2000)
 
-local i = 0
-local connected = false
+-- local i = 0
+-- local connected = false
 
 -- "main" loop, handles talking to server
 -- while sock:poll() do
