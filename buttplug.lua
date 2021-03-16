@@ -1,4 +1,5 @@
 -- buttplug.lua -- Lua client for buttplug.io
+
 local json = require("json")
 local pollnet = require("pollnet")
 
@@ -130,12 +131,6 @@ local function send(msg)
     buttplug.sock:send(payload)
 end
 
--- Connect to websocket address, returns open socket
-function buttplug.connect(websocket_address)
-    buttplug.sock = pollnet.open_ws(websocket_address)
-    return buttplug.sock
-end
-
 function buttplug.request_server_info(client_name)
     local msg = messages.RequestServerInfo
 
@@ -149,7 +144,6 @@ end
 -- } would set both motors on a device with 2 motors to 0.2
 function buttplug.send_vibrate_cmd(dev_index, speeds)
     if (not buttplug.has_devices()) then
-        -- print('no device, exit')
         return
     end
 
@@ -166,7 +160,6 @@ end
 
 function buttplug.send_stop_all_devices_cmd()
     if (not buttplug.has_devices()) then
-        -- print('no device, exit')
         return
     end
 
@@ -199,6 +192,7 @@ function buttplug.remove_device(dev_index)
     end
 end
 
+-- Decide what to do based on the message type
 function buttplug.handle_message(raw_message)
     local msg = json.decode(raw_message)[1]
     local msg_type = next(msg)
@@ -265,13 +259,8 @@ end
 
 -- Open the socket and send a handshake message to the server
 function buttplug.init(client_name, ws_addr)
-    local sock = buttplug.connect(ws_addr)
-    
-    if not sock then
-        print("error connecting to buttplug server")
-        os.exit()
-    end
-    
+    buttplug.sock = pollnet.open_ws(ws_addr)
+
     buttplug.request_server_info(client_name)
 end
 
