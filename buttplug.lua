@@ -148,7 +148,7 @@ end
 -- `speeds` is a table with 1 vibration value per motor e.g. { 0.2, 0.2
 -- } would set both motors on a device with 2 motors to 0.2
 function buttplug.send_vibrate_cmd(dev_index, speeds)
-    if (not buttplug.has_device()) then
+    if (not buttplug.has_devices()) then
         -- print('no device, exit')
         return
     end
@@ -165,8 +165,8 @@ function buttplug.send_vibrate_cmd(dev_index, speeds)
 end
 
 function buttplug.send_stop_all_devices_cmd()
-    if (not buttplug.has_devices) then
-        print('no device, exit')
+    if (not buttplug.has_devices()) then
+        -- print('no device, exit')
         return
     end
 
@@ -177,7 +177,7 @@ function buttplug.count_devices()
     return table.getn(buttplug.devices)
 end
 
-buttplug.has_devices = function ()
+function buttplug.has_devices()
     return buttplug.count_devices() > 0
 end
 
@@ -248,20 +248,31 @@ function buttplug.get_and_handle_message()
     return sock_status, message
 end
 
+-- Get devices from the Buttplug Server. If we haven't already gotten a
+-- Device List, try that first. Otherwise start scanning for devices.
 function buttplug.get_devices()
+    if not buttplug.got_server_info then
+        return
+    end
+
     if not buttplug.got_device_list then
         send(messages.RequestDeviceList)
-    else
+    elseif not buttplug.scanning then
         buttplug.scanning = true
         send(messages.StartScanning)
     end
 end
 
+-- Open the socket and send a handshake message to the server
 function buttplug.init(client_name, ws_addr)
-    -- open connection
-    -- check for existing devices
-    -- start scanning
-    -- get first device    
+    local sock = buttplug.connect(ws_addr)
+    
+    if not sock then
+        print("error connecting to buttplug server")
+        os.exit()
+    end
+    
+    buttplug.request_server_info(client_name)
 end
 
 return buttplug

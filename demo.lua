@@ -2,8 +2,6 @@
 -- local json = require("json")
 local buttplug = require("buttplug")
 
-local client_name = "Anomaly Demo"
-
 -- get system Sleep function
 local ffi = require("ffi")
 
@@ -24,17 +22,13 @@ end
 
 -- "Simulated" game loop
 function main_loop()
-    -- check sock health in connect
-    local sock = buttplug.connect("ws://127.0.0.1:12345")
-
-    -- abstract this into an init or something
-    buttplug.request_server_info(client_name)
+    buttplug.init("Demo", "ws://127.0.0.1:12345")
 
     -- Each "tick" of your script
     while true do
         buttplug.get_and_handle_message()
 
-        if not buttplug.has_devices then
+        if not buttplug.has_devices() then
             buttplug.get_devices()
         end
 
