@@ -2,28 +2,7 @@
 local json = require("json")
 local pollnet = require("pollnet")
 
--- get system Sleep function
-local ffi = require("ffi")
-
-ffi.cdef[[
-void Sleep(int ms);
-]]
-
-local sleep
-if ffi.os == "Windows" then
-  function sleep(s)
-    ffi.C.Sleep(s)
-  end
-else
-  function sleep(s)
-    ffi.C.poll(nil, 0, s)
-  end
-end
-
-
 local buttplug = {}
-
-local msg_counter = 1
 
 --
 -- Buttplug messages
@@ -94,15 +73,25 @@ messages.VibrateCmd = {
 }
 
 --
+-- Global variables
+--
+
+
+buttplug.msg_counter = 1
+buttplug.devices = {}
+buttplug.got_server_info = false
+buttplug.scanning = false
+
+--
 --
 --
 
 -- Send a message to the Buttplug Server
-function send(msg)
+local function send(msg)
     local message_type = next(msg)
 
-    msg[message_type].Id = msg_counter
-    msg_counter = msg_counter + 1
+    msg[message_type].Id = buttplug.msg_counter
+    buttplug.msg_counter = buttplug.msg_counter + 1
     
     local payload = "[" .. json.encode(msg) .. "]"
     print("> " .. payload)
@@ -121,6 +110,11 @@ function buttplug.request_server_info(client_name)
     msg["RequestServerInfo"]["ClientName"] = client_name
 
     send(msg)
+end
+
+
+function buttplug.request_device_list()
+    send(messages.RequestDeviceList)
 end
 
 function buttplug.start_scanning()
@@ -160,21 +154,6 @@ function buttplug.send_stop_all_devices_cmd()
     send(messages.StopAllDevices)
 end
 
-buttplug.devices = {}
-buttplug.got_server_info = false
-buttplug.scanning = false
-
--- function buttplug.recv()
---     while buttplug.sock:poll() do
---         local message = buttplug.sock:last_message()
-
---         if message then
---             print("< " .. message)
---         else
---             sleep(1000)
---         end
---     end
--- end
 
 function buttplug.has_device()
     return table.getn(buttplug.devices) > 0
