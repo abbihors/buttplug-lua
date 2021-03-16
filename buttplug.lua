@@ -1,6 +1,25 @@
 -- buttplug.lua -- Lua client for buttplug.io
-local json = require('json')
+local json = require("json")
 local pollnet = require("pollnet")
+
+-- get system Sleep function
+local ffi = require("ffi")
+
+ffi.cdef[[
+void Sleep(int ms);
+]]
+
+local sleep
+if ffi.os == "Windows" then
+  function sleep(s)
+    ffi.C.Sleep(s)
+  end
+else
+  function sleep(s)
+    ffi.C.poll(nil, 0, s)
+  end
+end
+
 
 local buttplug = {}
 
@@ -86,7 +105,7 @@ function send(msg)
     msg_counter = msg_counter + 1
     
     local payload = "[" .. json.encode(msg) .. "]"
-    print(payload)
+    print("> " .. payload)
     buttplug.sock:send(payload)
 end
 
@@ -116,19 +135,87 @@ end
 -- `speeds` is a table with 1 vibration value per motor e.g. { 0.2, 0.2
 -- } would set both motors on a device with 2 motors to 0.2
 function buttplug.send_vibrate_cmd(dev_index, speeds)
+    if (not buttplug.has_device()) then
+        print('no device, exit')
+        return
+    end
+
     local msg = messages.VibrateCmd
 
     msg["VibrateCmd"]["DeviceIndex"] = dev_index
 
     for i, v in ipairs(speeds) do
-        msg["VibrateCmd"]["Speeds"][i] = { Index = i - 1, Speed = v}
+        msg["VibrateCmd"]["Speeds"][i] = { Index = i - 1, Speed = v }
     end
 
     send(msg)
 end
 
 function buttplug.send_stop_all_devices_cmd()
+    if (not buttplug.has_device()) then
+        print('no device, exit')
+        return
+    end
+
     send(messages.StopAllDevices)
+end
+
+buttplug.devices = {}
+buttplug.got_server_info = false
+buttplug.scanning = false
+
+-- function buttplug.recv()
+--     while buttplug.sock:poll() do
+--         local message = buttplug.sock:last_message()
+
+--         if message then
+--             print("< " .. message)
+--         else
+--             sleep(1000)
+--         end
+--     end
+-- end
+
+function buttplug.has_device()
+    return table.getn(buttplug.devices) > 0
+end
+
+function buttplug.handle_message(message)
+    local message_type = next(message)
+
+    -- if ServerInfo, set flag
+    if (message_type == "ServerInfo") then
+        buttplug.got_server_info = true
+    end
+
+    -- if DeviceList, add any devices
+
+    -- if DeviceAdded, add the device
+
+    -- if DeviceRemoved, remove the device
+end
+
+function buttplug.get_and_handle_messages()
+    local sock_status = buttplug.sock:poll()
+
+    local message = buttplug.sock:last_message()
+
+    if message then
+        local contents = json.decode(message)[1]
+
+        buttplug.handle_message(contents)
+
+        print("< " .. message)
+    end
+
+    return sock_status, message
+end
+
+function buttplug.init()
+    -- open connection
+    -- check for existing devices
+    -- start scanning
+    -- get first device    
 end
 
 return buttplug
