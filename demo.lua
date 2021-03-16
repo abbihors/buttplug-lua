@@ -24,6 +24,7 @@ end
 
 -- "Simulated" game loop
 function main_loop()
+    -- check sock health in connect
     local sock = buttplug.connect("ws://127.0.0.1:12345")
 
     -- abstract this into an init or something
@@ -31,20 +32,10 @@ function main_loop()
 
     -- Each "tick" of your script
     while true do
-        buttplug.get_and_handle_messages()
+        buttplug.get_and_handle_message()
 
-        -- maybe just do like, if no device, get device
-        -- which makes sure we got server info etc.
-
-        -- Don't do anything until we get server info
-        if buttplug.got_server_info then
-            -- If we don't have devices, let's get some
-            if (not buttplug.has_device()) and (not buttplug.scanning) then
-                print('no devices, gonna look for some')
-
-                buttplug.get_devices()
-                -- buttplug.scan_for_devices()
-            end
+        if not buttplug.has_devices then
+            buttplug.get_devices()
         end
 
         -- Game doing other things, including running the thing

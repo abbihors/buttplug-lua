@@ -108,10 +108,10 @@ messages.VibrateCmd = {
 -- Global variables
 --
 
-
 buttplug.msg_counter = 1
 buttplug.devices = {}
 buttplug.got_server_info = false
+buttplug.got_device_list = false
 buttplug.scanning = false
 
 --
@@ -144,19 +144,6 @@ function buttplug.request_server_info(client_name)
     send(msg)
 end
 
-
-function buttplug.request_device_list()
-    send(messages.RequestDeviceList)
-end
-
-function buttplug.start_scanning()
-    send(messages.StartScanning)
-end
-
-function buttplug.stop_scanning()
-    send(messages.StopScanning)
-end
-
 -- Sends a vibrate command to device with the index `dev_index`.
 -- `speeds` is a table with 1 vibration value per motor e.g. { 0.2, 0.2
 -- } would set both motors on a device with 2 motors to 0.2
@@ -178,7 +165,7 @@ function buttplug.send_vibrate_cmd(dev_index, speeds)
 end
 
 function buttplug.send_stop_all_devices_cmd()
-    if (not buttplug.has_device()) then
+    if (not buttplug.has_devices) then
         print('no device, exit')
         return
     end
@@ -186,8 +173,12 @@ function buttplug.send_stop_all_devices_cmd()
     send(messages.StopAllDevices)
 end
 
-function buttplug.has_device()
-    return table.getn(buttplug.devices) > 0
+function buttplug.count_devices()
+    return table.getn(buttplug.devices)
+end
+
+buttplug.has_devices = function ()
+    return buttplug.count_devices() > 0
 end
 
 function buttplug.add_device(dev)
@@ -226,7 +217,7 @@ function buttplug.handle_message(raw_message)
             buttplug.add_device(v)
         end
 
-        buttplug.scanning = false
+        buttplug.got_device_list = true
     end
 
     -- if DeviceAdded, add the device
@@ -243,7 +234,7 @@ function buttplug.handle_message(raw_message)
     end
 end
 
-function buttplug.get_and_handle_messages()
+function buttplug.get_and_handle_message()
     local sock_status = buttplug.sock:poll()
 
     local message = buttplug.sock:last_message()
@@ -257,18 +248,16 @@ function buttplug.get_and_handle_messages()
     return sock_status, message
 end
 
-function buttplug.scan_for_devices()
-    -- Maybe check for scanning here? only scan if not scanning
-    buttplug.scanning = true
-    send(messages.StartScanning)
-end
-
 function buttplug.get_devices()
-    buttplug.scanning = true
-    send(messages.RequestDeviceList)
+    if not buttplug.got_device_list then
+        send(messages.RequestDeviceList)
+    else
+        buttplug.scanning = true
+        send(messages.StartScanning)
+    end
 end
 
-function buttplug.init()
+function buttplug.init(client_name, ws_addr)
     -- open connection
     -- check for existing devices
     -- start scanning
