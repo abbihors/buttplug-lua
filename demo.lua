@@ -42,7 +42,8 @@ function main_loop()
             if (not buttplug.has_device()) and (not buttplug.scanning) then
                 print('no devices, gonna look for some')
 
-                buttplug.scan_for_devices()
+                buttplug.get_devices()
+                -- buttplug.scan_for_devices()
             end
         end
 
@@ -56,57 +57,3 @@ main_loop()
 
 sleep(1000)
 print('exited')
-
--- wait_for_reply("Ok")
-
--- -- TODO: Check for existing devices?
-
--- -- Grab the first device
--- wait_for_reply("DeviceAdded")
-
--- -- Stop scanning
--- buttplug.stop_scanning()
--- wait_for_reply("Ok")
-
--- -- Send test vibration
--- -- sock:send(messages.TestVibrate)
--- -- wait_for_reply("Ok")
-
--- -- send_vibrate_cmd()
--- buttplug.send_vibrate_cmd(0, { 0.2, 0.2 })
-
--- sleep(2000)
--- buttplug.send_stop_all_devices_cmd()
-
-
--- local i = 0
--- local connected = false
-
--- "main" loop, handles talking to server
--- while sock:poll() do
--- local msg = sock:last_message()
--- if msg then
---     sock:send(req_devices)
-    
---     local msg_contents = json.decode(msg)
---     -- print(msg)
---     -- print(msg_contents[1] == "ServerInfo")
-
---     -- print(msg_contents[1].ServerInfo.ServerNamel)
-
---     local message = next(reply[1])
---     if (message == "ServerInfo") then
---         connected = true
---     end
-
-
---     i = i + 1
---     if (i > 4) then
---         os.exit()
---     end
--- else
---     sleep(1000)
--- end
--- end
-
--- print("Socket closed: ", sock:last_message())

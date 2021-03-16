@@ -190,6 +190,24 @@ function buttplug.has_device()
     return table.getn(buttplug.devices) > 0
 end
 
+function buttplug.add_device(dev)
+    local dev_count = table.getn(buttplug.devices)
+        
+    buttplug.devices[dev_count + 1] = {
+        index = dev["DeviceIndex"],
+        name = dev["DeviceName"],
+        messages = dev["DeviceMessages"]
+    }
+end
+
+function buttplug.remove_device(dev_index)
+    for i, v in ipairs(buttplug.devices) do
+        if v.index == dev_index then
+            table.remove(buttplug.devices, i)
+        end
+    end
+end
+
 function buttplug.handle_message(raw_message)
     local msg = json.decode(raw_message)[1]
     local msg_type = next(msg)
@@ -205,19 +223,15 @@ function buttplug.handle_message(raw_message)
         local devices = msg_contents["Devices"]
 
         for i, v in ipairs(devices) do
-            print(v)
+            buttplug.add_device(v)
         end
+
+        buttplug.scanning = false
     end
 
     -- if DeviceAdded, add the device
     if (msg_type == "DeviceAdded") then
-        local dev_index = msg_contents["DeviceIndex"]
-        
-        buttplug.devices[dev_index + 1] = {
-            index = msg_contents["DeviceIndex"],
-            name = msg_contents["DeviceName"],
-            messages = msg_contents["DeviceMessages"]
-        }
+        buttplug.add_device(msg_contents)
 
         buttplug.scanning = false
         send(messages.StopScanning)
@@ -225,8 +239,7 @@ function buttplug.handle_message(raw_message)
 
     -- if DeviceRemoved, remove the device
     if (msg_type == "DeviceRemoved") then
-        local index = msg_contents["DeviceIndex"]
-        print("Removing device: " .. index)
+        buttplug.remove_device(msg_contents["DeviceIndex"])
     end
 end
 
@@ -245,8 +258,14 @@ function buttplug.get_and_handle_messages()
 end
 
 function buttplug.scan_for_devices()
+    -- Maybe check for scanning here? only scan if not scanning
     buttplug.scanning = true
     send(messages.StartScanning)
+end
+
+function buttplug.get_devices()
+    buttplug.scanning = true
+    send(messages.RequestDeviceList)
 end
 
 function buttplug.init()
