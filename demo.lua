@@ -22,52 +22,40 @@ else
   end
 end
 
--- local url = "ws://127.0.0.1:12345"
--- local sock = pollnet.open_ws(url)
-
-local sock = buttplug.connect("ws://127.0.0.1:12345")
-
-function wait_for_reply(expected_message)
-    local sock_status = true
-    local message = ""
-
-    while sock_status do
-        sock_status, message = buttplug.recv()
-
-        
-    end
-    
-end
-
 -- "Simulated" game loop
 function main_loop()
+    local sock = buttplug.connect("ws://127.0.0.1:12345")
+
+    -- abstract this into an init or something
     buttplug.request_server_info(client_name)
 
+    -- Each "tick" of your script
     while true do
         buttplug.get_and_handle_messages()
+
+        -- maybe just do like, if no device, get device
+        -- which makes sure we got server info etc.
 
         -- Don't do anything until we get server info
         if buttplug.got_server_info then
             -- If we don't have devices, let's get some
-            if (not buttplug.has_device()) then
+            if (not buttplug.has_device()) and (not buttplug.scanning) then
                 print('no devices, gonna look for some')
-                
-                -- Ask for existing devices
 
-                -- Scan for devices if not already scanning
-
+                buttplug.scan_for_devices()
             end
         end
 
-        -- Game doing other things
+        -- Game doing other things, including running the thing
+        buttplug.send_vibrate_cmd(0, {0.2, 0.2})
         sleep(500)
     end
 end
 
--- Register with the server
--- sock:send(messages.RequestServerInfo)
-
 main_loop()
+
+sleep(1000)
+print('exited')
 
 -- wait_for_reply("Ok")
 
@@ -90,8 +78,6 @@ main_loop()
 -- sleep(2000)
 -- buttplug.send_stop_all_devices_cmd()
 
-sleep(2000)
-print('exited')
 
 -- local i = 0
 -- local connected = false

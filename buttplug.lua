@@ -10,11 +10,23 @@ local buttplug = {}
 
 local messages = {}
 
+-- Status messages
+
 messages.Ok = {
     Ok = {
         Id = 1
     }
 }
+
+messages.Error = {
+    Error = {
+        Id = 0,
+        ErrorMessage = "",
+        ErrorCode = 0
+    }
+}
+
+-- Handshake messages
 
 messages.RequestServerInfo = {
     RequestServerInfo = {
@@ -29,9 +41,11 @@ messages.ServerInfo = {
         Id = 1,
         ServerName = "",
         MessageVersion = 1,
-        MaxPingTime = 100
+        MaxPingTime = 0
     }
 }
+
+-- Enumeration messages
 
 messages.RequestDeviceList = {
     RequestDeviceList = {
@@ -57,6 +71,24 @@ messages.StopScanning = {
         Id = 1
     }
 }
+
+messages.DeviceAdded = {
+    DeviceAdded = {
+        Id = 0,
+        DeviceName = "",
+        DeviceIndex = 0,
+        DeviceMessages = {}
+    }
+}
+
+messages.DeviceRemoved = {
+    DeviceRemoved = {
+        Id = 0,
+        DeviceIndex = 0
+    }
+}
+
+-- Generic device messages
 
 messages.StopAllDevices = {
     StopAllDevices = {
@@ -130,7 +162,7 @@ end
 -- } would set both motors on a device with 2 motors to 0.2
 function buttplug.send_vibrate_cmd(dev_index, speeds)
     if (not buttplug.has_device()) then
-        print('no device, exit')
+        -- print('no device, exit')
         return
     end
 
@@ -154,24 +186,48 @@ function buttplug.send_stop_all_devices_cmd()
     send(messages.StopAllDevices)
 end
 
-
 function buttplug.has_device()
     return table.getn(buttplug.devices) > 0
 end
 
-function buttplug.handle_message(message)
-    local message_type = next(message)
+function buttplug.handle_message(raw_message)
+    local msg = json.decode(raw_message)[1]
+    local msg_type = next(msg)
+    local msg_contents = msg[msg_type]
 
     -- if ServerInfo, set flag
-    if (message_type == "ServerInfo") then
+    if (msg_type == "ServerInfo") then
         buttplug.got_server_info = true
     end
 
     -- if DeviceList, add any devices
+    if (msg_type == "DeviceList") then
+        local devices = msg_contents["Devices"]
+
+        for i, v in ipairs(devices) do
+            print(v)
+        end
+    end
 
     -- if DeviceAdded, add the device
+    if (msg_type == "DeviceAdded") then
+        local dev_index = msg_contents["DeviceIndex"]
+        
+        buttplug.devices[dev_index + 1] = {
+            index = msg_contents["DeviceIndex"],
+            name = msg_contents["DeviceName"],
+            messages = msg_contents["DeviceMessages"]
+        }
+
+        buttplug.scanning = false
+        send(messages.StopScanning)
+    end
 
     -- if DeviceRemoved, remove the device
+    if (msg_type == "DeviceRemoved") then
+        local index = msg_contents["DeviceIndex"]
+        print("Removing device: " .. index)
+    end
 end
 
 function buttplug.get_and_handle_messages()
@@ -180,14 +236,17 @@ function buttplug.get_and_handle_messages()
     local message = buttplug.sock:last_message()
 
     if message then
-        local contents = json.decode(message)[1]
-
-        buttplug.handle_message(contents)
-
         print("< " .. message)
+
+        buttplug.handle_message(message)
     end
 
     return sock_status, message
+end
+
+function buttplug.scan_for_devices()
+    buttplug.scanning = true
+    send(messages.StartScanning)
 end
 
 function buttplug.init()
