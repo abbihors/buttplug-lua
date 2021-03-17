@@ -11,13 +11,13 @@ void Sleep(int ms);
 
 local sleep
 if ffi.os == "Windows" then
-  function sleep(s)
-    ffi.C.Sleep(s)
-  end
+    function sleep(s)
+        ffi.C.Sleep(s)
+    end
 else
-  function sleep(s)
-    ffi.C.poll(nil, 0, s)
-  end
+    function sleep(s)
+        ffi.C.poll(nil, 0, s)
+    end
 end
 
 -- "Simulated" game loop
@@ -26,7 +26,12 @@ function main_loop()
 
     -- Each "tick" of your script
     while true do
-        buttplug.get_and_handle_message()
+        local err = buttplug.get_and_handle_message()
+        if err ~= nil then
+            print("error: couldn't connect to server")
+            return
+        end
+        
 
         if not buttplug.has_devices() then
             buttplug.get_devices()

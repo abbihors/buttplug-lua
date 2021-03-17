@@ -229,17 +229,22 @@ function buttplug.handle_message(raw_message)
     end
 end
 
+-- Gets and handles messages from the server. Returns -1 when something
+-- goes wrong
 function buttplug.get_and_handle_message()
     local sock_status = buttplug.sock:poll()
-
     local message = buttplug.sock:last_message()
 
     if message then
+        -- Check to see if connection was refused i.e. server is down
+        local io_error = string.sub(message, 0, 8) == "IO error"
+        if io_error then
+            return -1
+        end
+
         buttplug.print("< " .. message)
         buttplug.handle_message(message)
     end
-
-    return sock_status, message
 end
 
 -- Get devices from the Buttplug Server. If we haven't already gotten a
@@ -260,7 +265,6 @@ end
 -- Open the socket and send a handshake message to the server
 function buttplug.init(client_name, ws_addr)
     buttplug.sock = pollnet.open_ws(ws_addr)
-
     buttplug.request_server_info(client_name)
 end
 
