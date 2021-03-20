@@ -20,24 +20,27 @@ else
     end
 end
 
-local scanning = false
+-- Ask for the device list after we connect
+table.insert(buttplug.cb.ServerInfo, function()
+    buttplug.request_device_list()
+end)
 
--- Get a device from the Buttplug server
-function get_device()
-    -- Not connected yet
-    if not buttplug.got_server_info then
-        return
-    end
-
-    -- Try the device list first
-    if not buttplug.got_device_list then
-        buttplug.request_device_list()
-    elseif not scanning then
-        -- If device list was empty, start scanning
+-- Start scanning if the device list was empty
+table.insert(buttplug.cb.DeviceList, function()
+    if buttplug.count_devices() == 0 then
         buttplug.start_scanning()
-        scanning = true
     end
-end
+end)
+
+-- Stop scanning after the first device is found
+table.insert(buttplug.cb.DeviceAdded, function()
+    buttplug.stop_scanning()
+end)
+
+-- Start scanning if we lose a device
+table.insert(buttplug.cb.DeviceRemoved, function()
+    buttplug.start_scanning()
+end)
 
 -- "Simulated" game loop
 function main_loop()
@@ -51,16 +54,12 @@ function main_loop()
             return
         end
 
-        if scanning and buttplug.has_devices() then
-            buttplug.stop_scanning()
-            scanning = false
-        elseif not buttplug.has_devices() then    
-            get_device()
-        end
-
         -- Game doing other things, including running the thing
-        if buttplug.has_devices() then
+        if buttplug.count_devices() > 0 then
             buttplug.send_vibrate_cmd(0, { 0.2 })
+            sleep(500)
+            buttplug.send_vibrate_cmd(0, { 0 })
+            os.exit()
         end
         
         sleep(500)
@@ -68,6 +67,3 @@ function main_loop()
 end
 
 main_loop()
-
-sleep(1000)
-print('exited')
